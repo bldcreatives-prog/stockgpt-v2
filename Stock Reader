@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockGPT v2 — Elite AI Analyst</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#060a0e; --surface:#0c1218; --surface2:#111920; --border:#1a2836; --border2:#243344;
+    --accent:#00d4ff; --accent2:#ff6b35; --green:#00ff88; --red:#ff3b5c; --yellow:#ffd700;
+    --purple:#b06aff; --orange:#ff9500; --text:#e0eef5; --muted:#3d5a6e; --glow:0 0 30px rgba(0,212,255,0.1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0;}
+  .container{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:36px 20px;}
+  header{text-align:center;margin-bottom:44px;}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:76px;letter-spacing:6px;line-height:1;background:linear-gradient(135deg,#00d4ff 0%,#0066ff 40%,#00d4ff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 40px rgba(0,212,255,0.5));}
+  .version-tag{display:inline-block;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:#0066ff;background:rgba(0,102,255,0.1);border:1px solid rgba(0,102,255,0.3);border-radius:4px;padding:2px 8px;margin-left:8px;vertical-align:middle;}
+  .tagline{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-top:10px;}
+  .status-row{display:flex;justify-content:center;gap:12px;margin-top:14px;flex-wrap:wrap;}
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:4px 12px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;}
+  .badge.live{background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);color:var(--green);}
+  .badge.ai{background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);color:var(--accent);}
+  .badge.ws{background:rgba(176,106,255,0.08);border:1px solid rgba(176,106,255,0.2);color:var(--purple);}
+  .badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+  .search-section{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px;margin-bottom:28px;box-shadow:var(--glow);}
+  .search-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--accent);display:block;margin-bottom:14px;}
+  .search-row{display:flex;gap:10px;align-items:stretch;}
+  .stock-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 20px;font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:3px;color:var(--accent);outline:none;transition:all 0.3s;text-transform:uppercase;}
+  .stock-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,0.08);}
+  .stock-input::placeholder{color:var(--muted);opacity:0.4;}
+  .sel{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:0 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;cursor:pointer;}
+  .analyze-btn{background:linear-gradient(135deg,var(--accent),#0055cc);border:none;border-radius:10px;padding:14px 30px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#000;cursor:pointer;transition:all 0.3s;white-space:nowrap;}
+  .analyze-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,212,255,0.35);}
+  .analyze-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none;box-shadow:none;}
+  .loading{display:none;text-align:center;padding:70px 20px;}
+  .loading.show{display:block;}
+  .scan-ring{width:70px;height:70px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin 0.7s linear infinite;margin:0 auto 10px;}
+  .scan-ring2{width:50px;height:50px;border-radius:50%;border:2px solid var(--border);border-bottom-color:var(--green);animation:spin 1.1s linear infinite reverse;margin:-60px auto 0;position:relative;top:10px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-steps{margin-top:28px;display:flex;flex-direction:column;gap:8px;align-items:center;}
+  .step-item{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;padding:5px 16px;border-radius:20px;transition:all 0.4s;}
+  .step-item.active{color:var(--accent);background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);}
+  .step-item.done{color:var(--green);opacity:0.6;}
+  .step-item.pending{color:var(--muted);opacity:0.4;}
+  .results{display:none;animation:fadeUp 0.5s ease;}
+  .results.show{display:block;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+  .top-banner{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px 28px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;}
+  .ticker-block .sym{font-family:'Bebas Neue',sans-serif;font-size:58px;letter-spacing:3px;color:var(--accent);line-height:1;}
+  .ticker-block .name{font-size:13px;color:var(--muted);margin-top:2px;}
+  .ticker-block .price-row{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;}
+  .live-price{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--text);}
+  .live-badge{font-family:'DM Mono',monospace;font-size:9px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.25);border-radius:4px;padding:2px 7px;color:var(--green);}
+  .verdict-block{text-align:center;}
+  .verdict-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;}
+  .verdict-badge{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:3px;padding:10px 28px;border-radius:12px;border:2px solid;display:block;}
+  .verdict-badge.long{color:var(--green);border-color:var(--green);background:rgba(0,255,136,0.07);text-shadow:0 0 20px rgba(0,255,136,0.4);}
+  .verdict-badge.short{color:var(--red);border-color:var(--red);background:rgba(255,59,92,0.07);text-shadow:0 0 20px rgba(255,59,92,0.4);}
+  .verdict-badge.neutral{color:var(--yellow);border-color:var(--yellow);background:rgba(255,215,0,0.07);}
+  .scores-block{display:flex;flex-direction:column;gap:10px;min-width:180px;}
+  .score-row{display:flex;flex-direction:column;gap:4px;}
+  .score-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);}
+  .score-bar-wrap{background:var(--bg);border-radius:4px;height:7px;overflow:hidden;}
+  .score-bar{height:100%;border-radius:4px;transition:width 1.2s ease;}
+  .score-bar.green{background:linear-gradient(90deg,#00aa55,var(--green));}
+  .score-bar.red{background:linear-gradient(90deg,#aa2233,var(--red));}
+  .score-bar.blue{background:linear-gradient(90deg,#0055aa,var(--accent));}
+  .score-val{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--text);}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+  @media(max-width:700px){.grid-2,.grid-3{grid-template-columns:1fr;}.search-row{flex-direction:column;}.logo{font-size:52px;}.top-banner{flex-direction:column;}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+  .card.hl{border-color:rgba(0,212,255,0.25);background:linear-gradient(135deg,rgba(0,212,255,0.03),rgba(0,80,200,0.03));}
+  .card-title{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;padding-bottom:9px;border-bottom:1px solid var(--border);}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(26,40,54,0.7);}
+  .row:last-child{border-bottom:none;}
+  .row-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);}
+  .row-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--text);text-align:right;max-width:60%;}
+  .lvl{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;}
+  .lvl.entry{color:var(--accent);}
+  .lvl.stop{color:var(--red);}
+  .lvl.t1{color:#66ffcc;}
+  .lvl.t2{color:var(--green);}
+  .lvl.t3{color:#00ff44;}
+  .pill{font-family:'DM Mono',monospace;font-size:10px;padding:3px 10px;border-radius:20px;display:inline-block;}
+  .pill.bull{background:rgba(0,255,136,0.1);color:var(--green);border:1px solid rgba(0,255,136,0.2);}
+  .pill.bear{background:rgba(255,59,92,0.1);color:var(--red);border:1px solid rgba(255,59,92,0.2);}
+  .pill.neutral{background:rgba(255,215,0,0.1);color:var(--yellow);border:1px solid rgba(255,215,0,0.2);}
+  .pill.accent{background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.2);}
+  .pill.purple{background:rgba(176,106,255,0.1);color:var(--purple);border:1px solid rgba(176,106,255,0.2);}
+  .liq-zone{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;margin-bottom:7px;}
+  .liq-zone.bsl{background:rgba(0,255,136,0.04);border-left:3px solid var(--green);}
+  .liq-zone.ssl{background:rgba(255,59,92,0.04);border-left:3px solid var(--red);}
+  .liq-zone.ob{background:rgba(0,212,255,0.04);border-left:3px solid var(--accent);}
+  .liq-price{font-family:'Bebas Neue',sans-serif;font-size:20px;}
+  .bsl .liq-price{color:var(--green);}
+  .ssl .liq-price{color:var(--red);}
+  .ob .liq-price{color:var(--accent);}
+  .liq-note{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:right;max-width:55%;}
+  .ptag{display:inline-block;font-family:'DM Mono',monospace;font-size:10px;padding:4px 10px;border-radius:6px;border:1px solid rgba(0,212,255,0.2);color:var(--accent);background:rgba(0,212,255,0.04);margin:3px 3px 3px 0;}
+  .risk-meter{display:flex;gap:4px;margin-top:5px;}
+  .risk-block{flex:1;height:8px;border-radius:3px;background:var(--border);}
+  .sr-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:7px;margin-bottom:5px;}
+  .sr-row.res{background:rgba(255,59,92,0.04);border:1px solid rgba(255,59,92,0.1);}
+  .sr-row.sup{background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.1);}
+  .sr-row.current{background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);}
+  .sr-price{font-family:'Bebas Neue',sans-serif;font-size:18px;}
+  .res .sr-price{color:var(--red);}
+  .sup .sr-price{color:var(--green);}
+  .current .sr-price{color:var(--accent);}
+  .timeline-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(26,40,54,0.6);}
+  .timeline-item:last-child{border-bottom:none;}
+  .timeline-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+  .timeline-dot.green{background:var(--green);box-shadow:0 0 6px rgba(0,255,136,0.5);}
+  .timeline-dot.red{background:var(--red);box-shadow:0 0 6px rgba(255,59,92,0.5);}
+  .timeline-dot.yellow{background:var(--yellow);}
+  .timeline-dot.purple{background:var(--purple);}
+  .t-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;}
+  .t-text{font-size:12px;color:var(--text);margin-top:2px;line-height:1.4;}
+  .prob-row{margin-bottom:10px;}
+  .prob-header{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;}
+  .prob-track{background:var(--bg);border-radius:4px;height:7px;overflow:hidden;}
+  .prob-fill{height:100%;border-radius:4px;transition:width 1.3s ease;}
+  .prob-fill.bull{background:linear-gradient(90deg,#00aa55,var(--green));}
+  .prob-fill.side{background:linear-gradient(90deg,#aa8800,var(--yellow));}
+  .prob-fill.bear{background:linear-gradient(90deg,#aa1122,var(--red));}
+  .summary-box{background:linear-gradient(135deg,rgba(0,212,255,0.04),rgba(0,80,200,0.04));border:1px solid rgba(0,212,255,0.18);border-radius:14px;padding:22px;margin-bottom:14px;}
+  .summary-box .verdict-line{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--accent);margin-bottom:10px;}
+  .summary-box p{font-size:13px;line-height:1.75;color:rgba(224,238,245,0.85);}
+  .rr-tag{font-family:'Bebas Neue',sans-serif;font-size:22px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:4px 12px;color:var(--accent);}
+  .section-divider{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin:20px 0 12px;display:flex;align-items:center;gap:12px;}
+  .section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+  .plan-step{display:flex;gap:10px;margin-bottom:10px;}
+  .plan-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--muted);flex-shrink:0;width:24px;}
+  .plan-text{font-size:12px;line-height:1.6;color:rgba(224,238,245,0.8);}
+  .error-box{display:none;background:rgba(255,59,92,0.06);border:1px solid rgba(255,59,92,0.2);border-radius:12px;padding:20px;text-align:center;color:var(--red);font-family:'DM Mono',monospace;font-size:12px;margin-bottom:14px;}
+  .error-box.show{display:block;}
+  .disclaimer{text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:28px;padding-top:18px;border-top:1px solid var(--border);}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div><span class="logo">STOCKGPT</span><span class="version-tag">v2.0</span></div>
+    <div class="tagline">12-Framework Elite AI Stock Analysis System</div>
+    <div class="status-row">
+      <span class="badge live">LIVE PRICES</span>
+      <span class="badge ai">AI ANALYST ONLINE</span>
+      <span class="badge ws">WEB SEARCH ACTIVE</span>
+    </div>
+  </header>
+
+  <div class="search-section">
+    <span class="search-label">⬡ Enter Stock Ticker — Analyzed Across 12 Expert Frameworks</span>
+    <div class="search-row">
+      <input type="text" class="stock-input" id="stockInput" placeholder="AAPL, NVDA, TSLA..." maxlength="10"/>
+      <select class="sel" id="timeframeSelect" style="min-width:120px">
+        <option value="1 week">1 Week</option>
+        <option value="2 weeks">2 Weeks</option>
+        <option value="1 month" selected>1 Month</option>
+        <option value="3 months">3 Months</option>
+        <option value="6 months">6 Months</option>
+      </select>
+      <select class="sel" id="riskSelect" style="min-width:115px">
+        <option value="conservative">Conservative</option>
+        <option value="moderate" selected>Moderate</option>
+        <option value="aggressive">Aggressive</option>
+      </select>
+      <button class="analyze-btn" id="analyzeBtn" onclick="analyzeStock()">ANALYZE →</button>
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="scan-ring"></div>
+    <div class="scan-ring2"></div>
+    <div class="loading-steps">
+      <div class="step-item pending" id="step0">STEP 1 — FETCHING LIVE MARKET DATA</div>
+      <div class="step-item pending" id="step1">STEP 2 — SEARCHING RECENT NEWS &amp; EVENTS</div>
+      <div class="step-item pending" id="step2">STEP 3 — RUNNING 12-FRAMEWORK ANALYSIS</div>
+    </div>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+  <div class="results" id="results"></div>
+  <div class="disclaimer">⚠ NOT FINANCIAL ADVICE — FOR EDUCATIONAL PURPOSES ONLY — ALWAYS DO YOUR OWN RESEARCH — TRADE AT YOUR OWN RISK</div>
+</div>
+
+<script>
+document.getElementById('stockInput').addEventListener('keypress',e=>{if(e.key==='Enter')analyzeStock();});
+
+function setStep(n){
+  ['step0','step1','step2'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.className='step-item '+(i<n?'done':i===n?'active':'pending');
+  });
+}
+
+async function apiCall(messages, tools, maxTokens){
+  const body={model:"claude-sonnet-4-20250514",max_tokens:maxTokens,messages};
+  if(tools) body.tools=tools;
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":window.apiKey},body:JSON.stringify(body)});
+  return await r.json();
+}
+
+function extractJSON(text){
+  let clean=text.replace(/```json|```/g,'').trim();
+  const m=clean.match(/\{[\s\S]*\}/);
+  if(m) clean=m[0];
+  clean=clean.replace(/,\s*([}\]])/g,'$1');
+  try{return JSON.parse(clean);}catch(e){
+    let t=clean;
+    for(let i=0;i<200&&t.length>10;i++){
+      try{return JSON.parse(t+'"}}');}catch(e2){t=t.slice(0,-1);}
+    }
+  }
+  return null;
+}
+
+async function fetchLiveMarketData(ticker){
+  try{
+    const data=await apiCall([{role:"user",content:`Search for the CURRENT live stock price of ${ticker} today February 2026. Return ONLY this JSON no extra text: {"price":"XXX.XX","changePct":"X.XX","change":"X.XX","high52":"XXX","low52":"XXX","marketCap":"XXB","pe":"XX","volume":"XXM","companyName":"Full Name","sector":"Sector"}`}],[{type:"web_search_20250305",name:"web_search"}],600);
+    const raw=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const p=extractJSON(raw);
+    if(p&&p.price&&parseFloat(p.price)>0) return p;
+  }catch(e){}
+  return null;
+}
+
+async function fetchNewsData(ticker,companyName){
+  try{
+    const data=await apiCall([{role:"user",content:`Search for latest news analyst opinions and upcoming events for ${companyName||ticker} stock February 2026. Return ONLY this JSON: {"headlines":[{"sentiment":"bullish","text":"headline"},{"sentiment":"bearish","text":"headline"},{"sentiment":"bullish","text":"headline"},{"sentiment":"bearish","text":"headline"}],"earningsDate":"MMM DD YYYY or Unknown","analystTargetHigh":"$XXX","analystTargetLow":"$XXX","analystTargetAvg":"$XXX","upcomingEvents":["event1","event2"],"sectorTrend":"Bullish or Bearish or Neutral","marketRegime":"Risk-On or Risk-Off or Neutral"}`}],[{type:"web_search_20250305",name:"web_search"}],700);
+    const raw=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    return extractJSON(raw);
+  }catch(e){}
+  return null;
+}
+
+async function runAnalysis(ticker,timeframe,riskProfile,mkt,news){
+  const price=mkt?.price||'UNKNOWN';
+  const ctx=`LIVE DATA (Feb 2026): ${ticker} @ $${price} | Change: ${mkt?.changePct||'N/A'}% | 52wk H: $${mkt?.high52||'N/A'} L: $${mkt?.low52||'N/A'} | MCap: ${mkt?.marketCap||'N/A'} | P/E: ${mkt?.pe||'N/A'} | Vol: ${mkt?.volume||'N/A'} | Sector: ${mkt?.sector||'N/A'}
+NEWS: Earnings=${news?.earningsDate||'Unknown'} | AnalystAvg=${news?.analystTargetAvg||'N/A'} | Sector=${news?.sectorTrend||'N/A'} | Regime=${news?.marketRegime||'N/A'}
+Headlines: ${(news?.headlines||[]).map(h=>`[${h.sentiment}]${h.text}`).join(' | ')}
+Events: ${(news?.upcomingEvents||[]).join(', ')||'None'}
+CRITICAL: ALL prices must be relative to current price $${price}. Do NOT use old 2023/2024 prices.`;
+
+  const prompt=`You are a senior quant analyst at a top hedge fund with 25 years experience. Analyze ${ticker} for ${timeframe} trade using ${riskProfile} risk profile.
+
+${ctx}
+
+Apply ALL 12 frameworks: (1)Multi-timeframe trend 1H/4H/Daily/Weekly/Monthly (2)Smart Money ICT: BSL/SSL/order blocks/FVGs/stop hunts (3)Chart patterns (4)RSI with divergences (5)MACD histogram (6)Bollinger Bands (7)MA 8/21/50/200 EMA (8)Volume analysis (9)S/R levels with strength ratings (10)Fundamental valuation (11)Catalyst/event analysis (12)Macro/sector rotation context.
+
+Return ONLY raw JSON, no markdown, no backticks, no extra text. Strings under 85 chars. No apostrophes. Numbers as integers for confidence/probability fields. All price values MUST be realistic relative to $${price}:
+
+{"ticker":"${ticker}","companyName":"${mkt?.companyName||ticker}","currentPrice":"$${price}","verdict":"LONG","confidence":75,"timeframe":"${timeframe}","riskProfile":"${riskProfile}","entry":{"price":"$X-$X","type":"aggressive","trigger":"Specific price trigger e.g. break above $X with volume","reason":"Why this zone based on $${price}"},"stopLoss":{"price":"$X","pct":"X.X","reason":"What invalidates the trade at this level"},"targets":{"t1":{"price":"$X","pct":"X.X","note":"First BSL target"},"t2":{"price":"$X","pct":"X.X","note":"Major resistance"},"t3":{"price":"$X","pct":"X.X","note":"Max extension"}},"riskReward":"1:X.X","trend":{"h4":"Bullish","daily":"Bullish","weekly":"Bullish","monthly":"Bullish","overall":"Bullish","trendStrength":"Strong"},"scores":{"technical":72,"fundamental":68,"sentiment":65,"overall":70},"technicals":{"rsi":"XX status and divergence","macd":"Status histogram direction","bollingerBands":"Position squeeze or expansion","ema8":"above or below","ema21":"above or below","ema50":"above or below","ema200":"above or below","volume":"Volume analysis"},"chartPattern":["Pattern 1","Pattern 2","Pattern 3"],"keyPatternNote":"Most important pattern implication","liquidity":{"orderBlock":{"price":"$X","note":"OB description"},"fvg":{"price":"$X-$X","note":"FVG description"},"bsl":[{"price":"$X","note":"Stops description","strength":"High"},{"price":"$X","note":"Description","strength":"Medium"}],"ssl":[{"price":"$X","note":"Stops description","strength":"High"},{"price":"$X","note":"Description","strength":"Medium"}],"stopHuntRisk":"Likely stop hunt scenario","keyNote":"Main liquidity insight"},"supportResistance":[{"type":"resistance","price":"$X","strength":4,"note":"Why this level"},{"type":"resistance","price":"$X","strength":3,"note":"Why"},{"type":"current","price":"$${price}","strength":0,"note":"Current price"},{"type":"support","price":"$X","strength":5,"note":"Why this level"},{"type":"support","price":"$X","strength":3,"note":"Why"}],"fundamentals":{"pe":"${mkt?.pe||'N/A'}","pegRatio":"X.X","priceToSales":"X.X","revenueGrowth":"+XX% YoY","earningsGrowth":"+XX% YoY","profitMargin":"XX%","debtToEquity":"X.X","roe":"XX%","sector":"${mkt?.sector||'N/A'}","moat":"Wide or Narrow or None","analystRating":"Buy"},"nextEarnings":"${news?.earningsDate||'Unknown'}","analystTargets":{"high":"${news?.analystTargetHigh||'N/A'}","avg":"${news?.analystTargetAvg||'N/A'}","low":"${news?.analystTargetLow||'N/A'}"},"catalysts":[{"type":"bullish","timing":"This week","text":"Catalyst 1"},{"type":"bullish","timing":"This month","text":"Catalyst 2"},{"type":"risk","timing":"Ongoing","text":"Risk 1"},{"type":"risk","timing":"Near-term","text":"Risk 2"},{"type":"event","timing":"Upcoming","text":"Event"}],"macro":{"marketRegime":"${news?.marketRegime||'Neutral'}","sectorRotation":"${news?.sectorTrend||'Neutral'}","vixEnvironment":"Low or Medium or High","fedPolicy":"Fed impact","dollarImpact":"Bullish or Bearish or Neutral"},"riskFactors":["Risk 1","Risk 2","Risk 3"],"tradeRiskRating":"Medium","probability":{"bullish":60,"sideways":25,"bearish":15},"tradePlan":["Step 1 action","Step 2 action","Step 3 action","Step 4 manage exits"],"invalidation":"Specific level or event that kills the trade","summary":"3-sentence expert verdict: why this direction, key level to watch, main risk."}`;
+
+  const data=await apiCall([{role:"user",content:prompt}],null,3000);
+  const raw=(data.content||[]).map(b=>b.text||'').join('');
+  const result=extractJSON(raw);
+  if(!result) throw new Error("Could not parse AI analysis. Please try again.");
+  return result;
+}
+
+async function analyzeStock(){
+  const apiKey=prompt("Enter your Anthropic API key (get it free at console.anthropic.com):");
+  if(!apiKey){alert("API key required");return;}
+  window.apiKey=apiKey;
+  
+  const ticker=document.getElementById('stockInput').value.trim().toUpperCase();
+  const timeframe=document.getElementById('timeframeSelect').value;
+  const riskProfile=document.getElementById('riskSelect').value;
+  if(!ticker){document.getElementById('stockInput').focus();return;}
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('errorBox').classList.remove('show');
+  document.getElementById('analyzeBtn').disabled=true;
+  try{
+    setStep(0);
+    const mkt=await fetchLiveMarketData(ticker);
+    setStep(1);
+    const news=await fetchNewsData(ticker,mkt?.companyName);
+    setStep(2);
+    let d=await runAnalysis(ticker,timeframe,riskProfile,mkt,news);
+    if(mkt?.price) d.currentPrice='$'+parseFloat(mkt.price).toFixed(2);
+    if(mkt?.companyName) d.companyName=mkt.companyName;
+    if(news?.earningsDate) d.nextEarnings=news.earningsDate;
+    if(news?.analystTargetAvg) d.analystTargets={high:news.analystTargetHigh,avg:news.analystTargetAvg,low:news.analystTargetLow};
+    if(d.catalysts) d.catalysts=d.catalysts.map(c=>({...c,icon:c.type==='bullish'?'✅':c.type==='risk'?'⚠️':'📅'}));
+    document.getElementById('loading').classList.remove('show');
+    renderResults(d);
+  }catch(err){
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('analyzeBtn').disabled=false;
+    const eb=document.getElementById('errorBox');
+    eb.textContent='⚠ '+err.message;
+    eb.classList.add('show');
+  }
+}
+
+function tc(t){return t?.toLowerCase().includes('bull')?'bull':t?.toLowerCase().includes('bear')?'bear':'neutral';}
+
+function renderResults(d){
+  const vc=d.verdict==='LONG'?'long':d.verdict==='SHORT'?'short':'neutral';
+  const isShort=d.verdict==='SHORT';
+  const riskColors={'Low':'var(--green)','Medium':'var(--yellow)','High':'var(--orange)','Very High':'var(--red)'};
+  const riskBlocks={'Low':1,'Medium':2,'High':3,'Very High':4};
+  const rc=riskColors[d.tradeRiskRating]||'var(--yellow)';
+  const rb=riskBlocks[d.tradeRiskRating]||2;
+
+  const srHtml=(d.supportResistance||[]).map(s=>{
+    const stars='★'.repeat(s.strength||0)+'☆'.repeat(Math.max(0,5-(s.strength||0)));
+    return `<div class="sr-row ${s.type}">
+      <div><div class="sr-price">${s.price}</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">${s.note||''}</div></div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:${s.type==='resistance'?'var(--red)':s.type==='support'?'var(--green)':'var(--accent)'}">${s.type==='current'?'◆ CURRENT':s.type.toUpperCase()}</div>
+        ${s.strength>0?`<div style="font-size:11px;color:var(--yellow)">${stars}</div>`:''}
+      </div></div>`;
+  }).join('');
+
+  const catHtml=(d.catalysts||[]).map(c=>{
+    const dc=c.type==='bullish'?'green':c.type==='risk'?'red':'purple';
+    return `<div class="timeline-item"><div class="timeline-dot ${dc}"></div><div><div class="t-label">${c.timing||''}</div><div class="t-text">${c.icon||''} ${c.text||''}</div></div></div>`;
+  }).join('');
+
+  const planHtml=(d.tradePlan||[]).map((s,i)=>`<div class="plan-step"><div class="plan-num">${i+1}</div><div class="plan-text">${s}</div></div>`).join('');
+  const riskMeter=[1,2,3,4].map(i=>`<div class="risk-block" style="background:${i<=rb?rc:'var(--border)'}"></div>`).join('');
+
+  const html=`
+    <div class="top-banner">
+      <div class="ticker-block">
+        <div class="sym">${d.ticker}</div>
+        <div class="name">${d.companyName}</div>
+        <div class="price-row">
+          <span class="live-badge">● LIVE</span>
+          <span class="live-price">${d.currentPrice}</span>
+          ${d.macro?.marketRegime?`<span class="pill accent">${d.macro.marketRegime}</span>`:''}
+        </div>
+      </div>
+      <div class="verdict-block">
+        <div class="verdict-label">AI RECOMMENDATION</div>
+        <div class="verdict-badge ${vc}">${d.verdict}</div>
+        <div style="margin-top:8px;text-align:center">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)">Risk: </span>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:${rc}">${d.tradeRiskRating||'Medium'}</span>
+          <div class="risk-meter">${riskMeter}</div>
+        </div>
+      </div>
+      <div class="scores-block">
+        <div class="score-row">
+          <div class="score-label">TECHNICAL SCORE</div>
+          <div class="score-bar-wrap"><div class="score-bar ${isShort?'red':'green'}" id="sTech" style="width:0%"></div></div>
+          <div class="score-val">${d.scores?.technical||0}/100</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label">FUNDAMENTAL SCORE</div>
+          <div class="score-bar-wrap"><div class="score-bar blue" id="sFund" style="width:0%"></div></div>
+          <div class="score-val">${d.scores?.fundamental||0}/100</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label">SENTIMENT SCORE</div>
+          <div class="score-bar-wrap"><div class="score-bar ${isShort?'red':'green'}" id="sSent" style="width:0%"></div></div>
+          <div class="score-val">${d.scores?.sentiment||0}/100</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label">OVERALL SCORE</div>
+          <div class="score-bar-wrap"><div class="score-bar blue" id="sOver" style="width:0%"></div></div>
+          <div class="score-val"><b>${d.scores?.overall||d.confidence||0}/100</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider">Trade Setup</div>
+    <div class="grid-2">
+      <div class="card hl">
+        <div class="card-title">📍 Trade Levels &nbsp; R/R: <span class="rr-tag">${d.riskReward||'—'}</span></div>
+        <div class="row"><span class="row-label">ENTRY ZONE</span><span class="lvl entry">${d.entry?.price||'—'}</span></div>
+        <div class="row"><span class="row-label">ENTRY TRIGGER</span><span class="row-val" style="font-size:10px">${d.entry?.trigger||'—'}</span></div>
+        <div class="row"><span class="row-label">STOP LOSS</span><span class="lvl stop">${d.stopLoss?.price||'—'} <small style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">(${d.stopLoss?.pct||''}%)</small></span></div>
+        <div class="row"><span class="row-label">TARGET 1</span><span class="lvl t1">${d.targets?.t1?.price||'—'} <small style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">(+${d.targets?.t1?.pct||''}%)</small></span></div>
+        <div class="row"><span class="row-label">TARGET 2</span><span class="lvl t2">${d.targets?.t2?.price||'—'} <small style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">(+${d.targets?.t2?.pct||''}%)</small></span></div>
+        <div class="row"><span class="row-label">TARGET 3</span><span class="lvl t3">${d.targets?.t3?.price||'—'} <small style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">(+${d.targets?.t3?.pct||''}%)</small></span></div>
+        <div class="row"><span class="row-label">INVALIDATION</span><span class="row-val" style="font-size:10px;color:var(--red)">${d.invalidation||'—'}</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📈 Multi-Timeframe Trend</div>
+        <div class="row"><span class="row-label">4H TREND</span><span class="pill ${tc(d.trend?.h4)}">${d.trend?.h4||'—'}</span></div>
+        <div class="row"><span class="row-label">DAILY TREND</span><span class="pill ${tc(d.trend?.daily)}">${d.trend?.daily||'—'}</span></div>
+        <div class="row"><span class="row-label">WEEKLY TREND</span><span class="pill ${tc(d.trend?.weekly)}">${d.trend?.weekly||'—'}</span></div>
+        <div class="row"><span class="row-label">MONTHLY TREND</span><span class="pill ${tc(d.trend?.monthly)}">${d.trend?.monthly||'—'}</span></div>
+        <div class="row"><span class="row-label">OVERALL BIAS</span><span class="pill ${tc(d.trend?.overall)}">${d.trend?.overall||'—'}</span></div>
+        <div class="row"><span class="row-label">TREND STRENGTH</span><span class="pill accent">${d.trend?.trendStrength||'—'}</span></div>
+        <div style="margin-top:12px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:8px">ACTIVE PATTERNS</div>
+          ${(d.chartPattern||[]).map(p=>`<span class="ptag">${p}</span>`).join('')}
+          ${d.keyPatternNote?`<div style="font-size:11px;color:rgba(224,238,245,0.7);margin-top:8px;line-height:1.5">💡 ${d.keyPatternNote}</div>`:''}
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider">Technical Analysis</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">⚡ Indicators & Oscillators</div>
+        <div class="row"><span class="row-label">RSI</span><span class="row-val">${d.technicals?.rsi||'—'}</span></div>
+        <div class="row"><span class="row-label">MACD</span><span class="row-val">${d.technicals?.macd||'—'}</span></div>
+        <div class="row"><span class="row-label">BOLLINGER BANDS</span><span class="row-val">${d.technicals?.bollingerBands||'—'}</span></div>
+        <div class="row"><span class="row-label">VOLUME</span><span class="row-val">${d.technicals?.volume||'—'}</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📐 Moving Averages</div>
+        <div class="row"><span class="row-label">EMA 8</span><span class="row-val">${d.technicals?.ema8||'—'}</span></div>
+        <div class="row"><span class="row-label">EMA 21</span><span class="row-val">${d.technicals?.ema21||'—'}</span></div>
+        <div class="row"><span class="row-label">EMA 50</span><span class="row-val">${d.technicals?.ema50||'—'}</span></div>
+        <div class="row"><span class="row-label">EMA 200</span><span class="row-val">${d.technicals?.ema200||'—'}</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title">🏔 Support & Resistance Levels (★★★★★ = Strength)</div>
+      ${srHtml||'<div style="color:var(--muted);font-size:12px">No data</div>'}
+    </div>
+
+    <div class="section-divider">Smart Money & Liquidity (ICT)</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">💧 Liquidity Zones — Smart Money</div>
+        ${d.liquidity?.orderBlock?`<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent);margin-bottom:6px;letter-spacing:2px">ORDER BLOCK</div><div class="liq-zone ob"><span class="liq-price">${d.liquidity.orderBlock.price}</span><span class="liq-note">${d.liquidity.orderBlock.note}</span></div>`:''}
+        ${d.liquidity?.fvg?`<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--purple);margin:8px 0 5px;letter-spacing:2px">FAIR VALUE GAP</div><div class="liq-zone ob" style="border-left-color:var(--purple)"><span class="liq-price" style="color:var(--purple)">${d.liquidity.fvg.price}</span><span class="liq-note">${d.liquidity.fvg.note}</span></div>`:''}
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--green);margin:10px 0 5px;letter-spacing:2px">BUY-SIDE LIQUIDITY (BSL)</div>
+        ${(d.liquidity?.bsl||[]).map(z=>`<div class="liq-zone bsl"><span class="liq-price">${z.price}</span><div><span class="liq-note">${z.note}</span><br><span class="pill bull" style="font-size:8px;padding:1px 5px">${z.strength||'Med'}</span></div></div>`).join('')}
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--red);margin:10px 0 5px;letter-spacing:2px">SELL-SIDE LIQUIDITY (SSL)</div>
+        ${(d.liquidity?.ssl||[]).map(z=>`<div class="liq-zone ssl"><span class="liq-price">${z.price}</span><div><span class="liq-note">${z.note}</span><br><span class="pill bear" style="font-size:8px;padding:1px 5px">${z.strength||'Med'}</span></div></div>`).join('')}
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);padding-top:8px;border-top:1px solid var(--border);margin-top:8px">
+          🎯 Stop Hunt Risk: <span style="color:var(--yellow)">${d.liquidity?.stopHuntRisk||'—'}</span>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:5px">💡 ${d.liquidity?.keyNote||''}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">📅 Catalysts & Timeline</div>
+        ${catHtml||'<div style="color:var(--muted);font-size:12px">No data</div>'}
+        ${d.nextEarnings&&d.nextEarnings!=='Unknown'?`<div style="margin-top:14px;padding:10px 12px;background:rgba(176,106,255,0.06);border:1px solid rgba(176,106,255,0.15);border-radius:8px"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--purple);letter-spacing:2px;margin-bottom:4px">NEXT EARNINGS</div><div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--purple)">${d.nextEarnings}</div></div>`:''}
+      </div>
+    </div>
+
+    <div class="section-divider">Fundamentals & Macro</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">🏛 Fundamental Analysis</div>
+        <div class="row"><span class="row-label">P/E RATIO</span><span class="row-val">${d.fundamentals?.pe||'—'}</span></div>
+        <div class="row"><span class="row-label">PEG RATIO</span><span class="row-val">${d.fundamentals?.pegRatio||'—'}</span></div>
+        <div class="row"><span class="row-label">REVENUE GROWTH</span><span class="row-val">${d.fundamentals?.revenueGrowth||'—'}</span></div>
+        <div class="row"><span class="row-label">EARNINGS GROWTH</span><span class="row-val">${d.fundamentals?.earningsGrowth||'—'}</span></div>
+        <div class="row"><span class="row-label">PROFIT MARGIN</span><span class="row-val">${d.fundamentals?.profitMargin||'—'}</span></div>
+        <div class="row"><span class="row-label">DEBT / EQUITY</span><span class="row-val">${d.fundamentals?.debtToEquity||'—'}</span></div>
+        <div class="row"><span class="row-label">ROE</span><span class="row-val">${d.fundamentals?.roe||'—'}</span></div>
+        <div class="row"><span class="row-label">ECONOMIC MOAT</span><span class="pill ${d.fundamentals?.moat==='Wide'?'bull':d.fundamentals?.moat==='None'?'bear':'neutral'}">${d.fundamentals?.moat||'—'}</span></div>
+        <div class="row"><span class="row-label">ANALYST RATING</span><span class="pill ${d.fundamentals?.analystRating?.includes('Buy')?'bull':d.fundamentals?.analystRating?.includes('Sell')?'bear':'neutral'}">${d.fundamentals?.analystRating||'—'}</span></div>
+        ${d.analystTargets?`<div style="display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          <div style="flex:1;text-align:center;padding:8px;background:rgba(255,59,92,0.04);border-radius:6px"><div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted)">LOW TARGET</div><div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--red)">${d.analystTargets.low}</div></div>
+          <div style="flex:1;text-align:center;padding:8px;background:rgba(0,212,255,0.04);border-radius:6px"><div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted)">AVG TARGET</div><div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--accent)">${d.analystTargets.avg}</div></div>
+          <div style="flex:1;text-align:center;padding:8px;background:rgba(0,255,136,0.04);border-radius:6px"><div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted)">HIGH TARGET</div><div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--green)">${d.analystTargets.high}</div></div>
+        </div>`:''}
+      </div>
+      <div class="card">
+        <div class="card-title">🌍 Macro & Market Context</div>
+        <div class="row"><span class="row-label">MARKET REGIME</span><span class="pill ${d.macro?.marketRegime?.includes('Risk-On')?'bull':d.macro?.marketRegime?.includes('Risk-Off')?'bear':'neutral'}">${d.macro?.marketRegime||'—'}</span></div>
+        <div class="row"><span class="row-label">SECTOR ROTATION</span><span class="pill ${tc(d.macro?.sectorRotation)}">${d.macro?.sectorRotation||'—'}</span></div>
+        <div class="row"><span class="row-label">VIX ENVIRONMENT</span><span class="row-val">${d.macro?.vixEnvironment||'—'}</span></div>
+        <div class="row"><span class="row-label">FED POLICY IMPACT</span><span class="row-val">${d.macro?.fedPolicy||'—'}</span></div>
+        <div class="row"><span class="row-label">DOLLAR IMPACT</span><span class="row-val">${d.macro?.dollarImpact||'—'}</span></div>
+        <div style="margin-top:14px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--red);letter-spacing:2px;margin-bottom:8px">KEY RISK FACTORS</div>
+          ${(d.riskFactors||[]).map(r=>`<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(26,40,54,0.5);font-size:11px;line-height:1.4;color:rgba(224,238,245,0.75)"><span style="color:var(--red)">▸</span>${r}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider">Probability & Trade Plan</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">🎯 Scenario Probability — ${d.timeframe}</div>
+        <div class="prob-row"><div class="prob-header"><span style="color:var(--green)">🟢 Bullish</span><span style="color:var(--green);font-weight:600">${d.probability?.bullish||0}%</span></div><div class="prob-track"><div class="prob-fill bull" id="pBull" style="width:0%"></div></div></div>
+        <div class="prob-row"><div class="prob-header"><span style="color:var(--yellow)">🟡 Sideways</span><span style="color:var(--yellow);font-weight:600">${d.probability?.sideways||0}%</span></div><div class="prob-track"><div class="prob-fill side" id="pSide" style="width:0%"></div></div></div>
+        <div class="prob-row" style="margin-bottom:0"><div class="prob-header"><span style="color:var(--red)">🔴 Bearish</span><span style="color:var(--red);font-weight:600">${d.probability?.bearish||0}%</span></div><div class="prob-track"><div class="prob-fill bear" id="pBear" style="width:0%"></div></div></div>
+        <div style="margin-top:16px;padding:12px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.1);border-radius:8px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:4px">AI CONFIDENCE</div>
+          <div class="score-bar-wrap" style="margin-bottom:4px"><div class="score-bar ${isShort?'red':'green'}" id="confBar" style="width:0%"></div></div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--text)">${d.confidence||0}%</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Step-by-Step Trade Plan</div>
+        <div style="margin-top:4px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:${isShort?'var(--red)':'var(--green)'};margin-bottom:12px">${d.verdict} ${d.ticker} — ${d.riskProfile?.toUpperCase()||''} PLAN</div>
+          ${planHtml}
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card"><div class="card-title">📍 Entry Rationale</div><p style="font-size:12px;line-height:1.7;color:rgba(224,238,245,0.8)">${d.entry?.reason||'—'}</p></div>
+      <div class="card"><div class="card-title">🛑 Stop Loss Rationale</div><p style="font-size:12px;line-height:1.7;color:rgba(224,238,245,0.8)">${d.stopLoss?.reason||'—'}</p></div>
+    </div>
+
+    <div class="summary-box" style="margin-top:14px">
+      <div class="verdict-line">⚡ EXPERT VERDICT — ${d.verdict} ${d.ticker} | ${d.timeframe} | ${(d.riskProfile||'').toUpperCase()} RISK</div>
+      <p>${d.summary||'—'}</p>
+    </div>
+  `;
+
+  const el=document.getElementById('results');
+  el.innerHTML=html;
+  el.classList.add('show');
+  document.getElementById('analyzeBtn').disabled=false;
+  setTimeout(()=>{
+    const set=(id,v)=>{const e=document.getElementById(id);if(e)e.style.width=v+'%';};
+    set('sTech',d.scores?.technical||0);
+    set('sFund',d.scores?.fundamental||0);
+    set('sSent',d.scores?.sentiment||0);
+    set('sOver',d.scores?.overall||d.confidence||0);
+    set('confBar',d.confidence||0);
+    set('pBull',d.probability?.bullish||0);
+    set('pSide',d.probability?.sideways||0);
+    set('pBear',d.probability?.bearish||0);
+  },120);
+}
+</script>
+</body>
+</html>
